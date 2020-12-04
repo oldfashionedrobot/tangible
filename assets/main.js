@@ -74,6 +74,7 @@ function startGame(roomName) {
         lobbyView.hide();
         gameView.show();
         $('#gameName').text(roomName);
+        document.title = `Battle Fish: ${roomName}`;
         break;
       default:
         $('#lobby-msg').text(`Waiting for another player...`);
