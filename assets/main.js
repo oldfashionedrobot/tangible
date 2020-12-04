@@ -1,164 +1,130 @@
 
+const socket = io();
 
 
-
-
-// Get the canvas.
-// var canvas = document.querySelectorAll('canvas');
 var squares = document.querySelectorAll('.square');
+const gameView = $('#game');
+const lobbyView = $('#lobby');
+const roomInput = $('#roomInput');
+let currentRoom;
+let gameTurn;
 
-var socket = io();
+// start
+gameView.hide();
+lobbyView.show();
 
-socket.on('object-placed', msg => {
-  let [idx, dir] = msg.split(' ');
 
-  squares[idx].className = 'square ' + dir;
+
+function createGame() {
+  const roomName = roomInput.val();
+  socket.emit('create-room', roomName);
+
+  socket.once('room-create-result', result => {
+    if (result === true) {
+      // console.log(`Created Game "${roomName}"`);
+      startGame(roomName);
+    } else {
+      alert('Game "' + roomName + '" already exists');
+    }
+  });
+}
+
+function joinGame() {
+  const roomName = roomInput.val();
+  socket.emit('join-room', roomName);
+
+  socket.once('room-join-result', result => {
+    if (result === true) {
+      // console.log(`Joined Game "${roomName}"`);
+      startGame(roomName);
+    } else {
+      alert('Game "' + roomName + '" not found');
+    }
+  })
+}
+
+function listenForRoomMessages() {
+  socket.on('room-closing', msg => {
+    gameView.hide();
+    lobbyView.show();
+    $('#lobby-msg').text(`A player left, game is canceled.`);
+  });
+
+  socket.on('private-msg', msg => {
+    console.log('private', msg);
+    $('#game-msg').text(msg);
+  });
+}
+
+function restartGame() {
+
+  socket.emit('restart-game');
+}
+
+function startGame(roomName) {
+  currentRoom = roomName;
+  socket.on('game-info', gameInfo => {
+    switch (gameInfo.state) {
+      case 'MISSILE':
+        console.log('firing missile');
+        break;
+      case 'FISH':
+        console.log('placing fish');
+        // start game
+        lobbyView.hide();
+        gameView.show();
+        $('#gameName').text(roomName);
+        break;
+      default:
+        $('#lobby-msg').text(`Waiting for another player...`);
+        break;
+    }
+
+
+  });
+
+  listenForRoomMessages();
+}
+
+
+
+// server tells players what to do
+socket.on('place-fish', msg => {
+  gameTurn = 'PLACE_FISH';
+});
+
+socket.on('fire-missiles', msg => {
+  gameTurn = 'FIRE_MISSILES';
+});
+
+socket.on('missile-launched', idx => {
+  const sq = $(`.square[data-index="${idx}"]`);
+  if (sq.hasClass('fish'))
+    sq.addClass('hit');
+  else
+    sq.addClass('missile');
 })
 
+socket.on('fish-hit', idx => {
+  $(`.square[data-index="${idx}"]`).addClass('hit');
+})
 
-// Get a 2d drawing context.
-// var ctx = canvas.getContext('2d');
+socket.on('game-over', () => {
+  $('#game-msg').text('Game over!!!');
+  $('#restartButton').show();
+});
 
-// Used to keep track of active touches.
-// var currentTouches = new Array;
+socket.on('restart-game', () => {
+  $('.square').removeClass('hit');
+  $('.square').removeClass('missile');
+  $('.square').removeClass('fish');
+  $('#restartButton').hide();
+});
 
-
-//-------------------------//
-// Helper Methods
-//-------------------------//
-
-
-// Returns a random color from an array.
-// var randomColor = function () {
-//   var colors = ['#3F3F3F', '#929292', '#00A3EE', '#F5D908', '#D80351'];
-//   return colors[Math.floor(Math.random() * colors.length)];
-// };
-
-
-// // Finds the array index of a touch in the currentTouches array.
-// var findCurrentTouchIndex = function (id) {
-//   for (var i = 0; i < currentTouches.length; i++) {
-//     if (currentTouches[i].id === id) {
-//       return i;
-//     }
-//   }
-
-//   // Touch not found! Return -1.
-//   return -1;
-// };
-
-
-//-------------------------//
-// Handler Methods
-//-------------------------//
-
-
-// Creates a new touch in the currentTouches array and draws the starting
-// point on the canvas.
-// var touchStarted = function (event) {
-//   var touches = event.changedTouches;
-
-//   for (var i = 0; i < touches.length; i++) {
-//     var touch = touches[i];
-//     var touchColor = randomColor();
-
-//     currentTouches.push({
-//       id: touch.identifier,
-//       pageX: touch.pageX,
-//       pageY: touch.pageY,
-//       color: touchColor
-//     });
-
-//     ctx.beginPath();
-//     ctx.arc(touch.pageX, touch.pageY, 2.5, Math.PI * 2, false);
-//     ctx.fillStyle = touchColor;
-//     ctx.fill();
-//   }
-
-// };
-
-
-// // Draws a line on the canvas between the previous touch location and
-// // the new location.
-// var touchMoved = function (event) {
-//   var touches = event.changedTouches;
-
-//   for (var i = 0; i < touches.length; i++) {
-//     var touch = touches[i];
-//     var currentTouchIndex = findCurrentTouchIndex(touch.identifier);
-
-//     if (currentTouchIndex >= 0) {
-//       var currentTouch = currentTouches[currentTouchIndex];
-
-//       ctx.beginPath();
-//       ctx.moveTo(currentTouch.pageX, currentTouch.pageY);
-//       ctx.lineTo(touch.pageX, touch.pageY);
-//       ctx.lineWidth = 4;
-//       ctx.strokeStyle = currentTouch.color;
-//       ctx.stroke();
-
-//       // Update the touch record.
-//       currentTouch.pageX = touch.pageX;
-//       currentTouch.pageY = touch.pageY;
-
-//       // Store the record.
-//       currentTouches.splice(currentTouchIndex, 1, currentTouch);
-//     } else {
-//       console.log('Touch was not found!');
-//     }
-
-//   }
-
-// };
-
-
-// // Draws a line to the final touch position on the canvas and then
-// // removes the touh from the currentTouches array.
-// var touchEnded = function (event) {
-//   var touches = event.changedTouches;
-
-//   for (var i = 0; i < touches.length; i++) {
-//     var touch = touches[i];
-//     var currentTouchIndex = findCurrentTouchIndex(touch.identifier);
-
-//     if (currentTouchIndex >= 0) {
-//       var currentTouch = currentTouches[currentTouchIndex];
-
-//       ctx.beginPath();
-//       ctx.moveTo(currentTouch.pageX, currentTouch.pageY);
-//       ctx.lineTo(touch.pageX, touch.pageY);
-//       ctx.lineWidth = 4;
-//       ctx.strokeStyle = currentTouch.color;
-//       ctx.stroke();
-
-//       // Remove the record.
-//       currentTouches.splice(currentTouchIndex, 1);
-//     } else {
-//       console.log('Touch was not found!');
-//     }
-
-//   }
-
-// };
-
-
-// // Removes cancelled touches from the currentTouches array.
-// var touchCancelled = function (event) {
-//   var touches = event.changedTouches;
-
-//   for (var i = 0; i < touches.length; i++) {
-//     var currentTouchIndex = findCurrentTouchIndex(touches[i].identifier);
-
-//     if (currentTouchIndex >= 0) {
-//       // Remove the touch record.
-//       currentTouches.splice(currentTouchIndex, 1);
-//     } else {
-//       console.log('Touch was not found!');
-//     }
-//   }
-// };
-
-
+socket.on('fish-destroyed', () => {
+  $('#game-msg').text('Fish destroyed!!!');
+  $('#restartButton').show();
+});
 
 
 
@@ -167,6 +133,38 @@ socket.on('object-placed', msg => {
 //-------------------------//
 
 squares.forEach((s, idx) => s.addEventListener('touchstart', (e) => {
+  e.preventDefault();
+
+  if (gameTurn === 'PLACE_FISH') {
+    if (e.touches.length > 1) {
+      let touch1 = e.touches[0];
+      let touch2 = e.touches[1];
+
+      touch1.target.className = 'square fish';
+      touch2.target.className = 'square fish';
+
+      gameTurn = null;
+      socket.emit(
+        'fish-placed', [parseInt(touch1.target.getAttribute('data-index')), parseInt(touch2.target.getAttribute('data-index'))]
+      );
+    }
+  } else if (gameTurn === 'FIRE_MISSILES') {
+    let touch1 = e.touches[0];
+
+    if ($(touch1.target).hasClass('missile')) {
+      // dont re-fire on spot
+      return;
+    }
+
+    touch1.target.className = 'square missile';
+
+    gameTurn = null;
+    socket.emit('missile-placed', parseInt(touch1.target.getAttribute('data-index')));
+  }
+}));
+
+
+function oldTouchListener(e) {
 
   console.log('start');
   e.preventDefault();
@@ -212,72 +210,7 @@ squares.forEach((s, idx) => s.addEventListener('touchstart', (e) => {
     socket.emit('object-placed', idx + " " + faceDir);
 
   }
-}));
-
-// // Set up an event listener for new touches.
-// canvas.forEach(c => c.addEventListener('touchstart', function (e) {
-
-//   var ctx = e.target.getContext('2d');
-
-//   console.log('start');
-//   e.preventDefault();
-//   // touchStarted(e);
-//   if (e.touches.length >= 3) {
-//     console.log('three');
-//     let touch1 = e.touches[0];
-//     let touch2 = e.touches[1];
-//     let touch3 = e.touches[2];
-
-//     drawTriangle(ctx, touch1, touch2, touch3);
-//     let center = getTriangleCentroid(ctx, touch1, touch2, touch3);
-//     let apex = findApexPoint(center, touch1, touch2, touch3);
-
-
-//     let xOff = ctx.canvas.offsetLeft;
-//     let yOff = ctx.canvas.offsetTop;
-//     ctx.beginPath();
-//     ctx.arc(apex.pageX - xOff, apex.pageY - yOff, 5, Math.PI * 2, false);
-//     ctx.fillStyle = randomColor();
-//     ctx.fill();
-//   }
-
-// }));
-
-
-// Set up an event listener for when a touch ends.
-// canvas.forEach(c => c.addEventListener('touchend', function (e) {
-//   var ctx = e.target.getContext('2d');
-//   console.log('end');
-//   e.preventDefault();
-//   // touchEnded(e);
-//   if (e.touches.length < 3) {
-//     // clearCanvas();
-//   }
-// }));
-
-// // Set up an event listener for when the touch instrument is moved.
-// canvas.forEach(c => c.addEventListener('touchmove', function (e) {
-//   var ctx = e.target.getContext('2d');
-//   console.log('move');
-//   e.preventDefault();
-//   // touchMoved(e);
-
-//   if (e.touches.length >= 3) {
-//     let touch1 = e.touches[0];
-//     let touch2 = e.touches[1];
-//     let touch3 = e.touches[2];
-
-//     // clearCanvas();
-//     // drawTriangle(touch1, touch2, touch3);
-//   }
-
-// }));
-
-// // Set up an event listener to catch cancelled touches.
-// canvas.addEventListener('touchcancel', function (e) {
-//   // console.log('cancel');
-//   touchCancelled(e);
-// });
+}
 
 function getPointDirection(pointA, pointB) {
   return normalize({
