@@ -141,6 +141,10 @@ squares.forEach((s, idx) => s.addEventListener('touchstart', (e) => {
       let touch1 = e.touches[0];
       let touch2 = e.touches[1];
 
+      if (touch1.target == touch2.target) {
+        return;
+      }
+
       touch1.target.className = 'square fish';
       touch2.target.className = 'square fish';
 
