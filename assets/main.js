@@ -1,6 +1,25 @@
 
 const socket = io();
 
+const fire = `
+<div class="fire">
+  <div class="fire-left">
+    <div class="main-fire"></div>
+    <div class="particle-fire"></div>
+  </div>
+  <div class="fire-main">
+    <div class="main-fire"></div>
+    <div class="particle-fire"></div>
+  </div>
+  <div class="fire-right">
+    <div class="main-fire"></div>
+    <div class="particle-fire"></div>
+  </div>
+  <div class="fire-bottom">
+    <div class="main-fire"></div>
+  </div>
+</div>
+`;
 
 var squares = document.querySelectorAll('.square');
 const gameView = $('#game');
@@ -77,7 +96,8 @@ function startGame(roomName) {
         document.title = `Battle Fish: ${roomName}`;
         break;
       default:
-        $('#lobby-msg').text(`Waiting for another player...`);
+        $('.form-group .btn').addClass('loading');
+        $('#lobby-msg').text(`Game "${roomName}" created, Waiting for another player...`);
         break;
     }
 
@@ -100,14 +120,16 @@ socket.on('fire-missiles', msg => {
 
 socket.on('missile-launched', idx => {
   const sq = $(`.square[data-index="${idx}"]`);
-  if (sq.hasClass('fish'))
+  if (sq.hasClass('fish')) {
     sq.addClass('hit');
-  else
-    sq.addClass('missile');
+    sq.append(fire);
+  } else { sq.addClass('missile'); }
 })
 
 socket.on('fish-hit', idx => {
-  $(`.square[data-index="${idx}"]`).addClass('hit');
+  const sq = $(`.square[data-index="${idx}"]`);
+  sq.addClass('hit');
+  sq.append(fire);
 })
 
 socket.on('game-over', () => {
@@ -119,6 +141,7 @@ socket.on('restart-game', () => {
   $('.square').removeClass('hit');
   $('.square').removeClass('missile');
   $('.square').removeClass('fish');
+  $('.fire').remove();
   $('#restartButton').hide();
 });
 

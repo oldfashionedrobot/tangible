@@ -2,21 +2,31 @@
 
 <head>
   <title>Battle Fish</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/spectre.css/0.5.9/spectre.min.css"
+    integrity="sha512-9RIcp1f4CE6dEuYX9085tXaEbYd1ap04d2Av1ub/dwuT33WbfbHStDdQ+shKrp5wzZzleh5DOg+7ABSnaQP/nQ=="
+    crossorigin="anonymous" />
   <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
 
   <section id="lobby">
-    <input id="roomInput" type="text">
-    <button class="green" onclick="createGame()">Create Game</button>
-    <button class="red" onclick="joinGame()">Join Game</button>
-    <p id="lobby-msg"></p>
+    <h1>
+      Battle Fish
+    </h1>
+      <div class="form-group">
+        <label class="form-label" for="roomInput">Game Name</label>
+        <input class="form-input" type="text" id="roomInput">
+        <br>
+        <button class="btn btn-primary" onclick="createGame()">Create Game</button>
+        <button class="btn" onclick="joinGame()">Join Game</button>
+      </div>
+      <p id="lobby-msg"></p>
   </section>
   
   <section id="game">
     <h1>
-      <button id="restartButton" onclick="restartGame()" style="display: none; float: right;">Play Again</button> 
+      <button id="restartButton" class="btn btn-primary" onclick="restartGame()" style="display: none; float: right;">Play Again</button> 
       Game:
       <span id="gameName"></span>
     </h1>
