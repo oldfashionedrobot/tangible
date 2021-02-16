@@ -22,20 +22,18 @@ const fire = `
 `;
 
 var squares = document.querySelectorAll('.square');
-const gameView = $('#game');
-const lobbyView = $('#lobby');
-const roomInput = $('#roomInput');
+const gameView = document.querySelector('#game');
+const lobbyView = document.querySelector('#lobby');
+const roomInput = document.querySelector('#roomInput');
 let currentRoom;
 let gameTurn;
 
 // start
-gameView.hide();
-lobbyView.show();
-
-
+gameView.style.display = 'none';
+lobbyView.style.display = 'block';
 
 function createGame() {
-  const roomName = roomInput.val();
+  const roomName = roomInput.value;
   socket.emit('create-room', roomName);
 
   socket.once('room-create-result', result => {
@@ -49,7 +47,7 @@ function createGame() {
 }
 
 function joinGame() {
-  const roomName = roomInput.val();
+  const roomName = roomInput.value;
   socket.emit('join-room', roomName);
 
   socket.once('room-join-result', result => {
@@ -64,14 +62,14 @@ function joinGame() {
 
 function listenForRoomMessages() {
   socket.on('room-closing', msg => {
-    gameView.hide();
-    lobbyView.show();
-    $('#lobby-msg').text(`A player left, game is canceled.`);
+    gameView.styles.display = 'none';
+    lobbyView.styles.display = 'block';
+    document.querySelector('#lobby-msg').textContent = `A player left, game is canceled.`;
   });
 
   socket.on('private-msg', msg => {
     console.log('private', msg);
-    $('#game-msg').text(msg);
+    document.querySelector('#game-msg').textContent = msg;
   });
 }
 
@@ -90,14 +88,16 @@ function startGame(roomName) {
       case 'FISH':
         console.log('placing fish');
         // start game
-        lobbyView.hide();
-        gameView.show();
-        $('#gameName').text(roomName);
+        lobbyView.style.display = 'none';
+        gameView.style.display = 'block';
+        document.querySelector('#gameName').textContent = roomName;
         document.title = `Battle Fish: ${roomName}`;
         break;
       default:
-        $('.form-group .btn').addClass('loading');
-        $('#lobby-msg').text(`Game "${roomName}" created, Waiting for another player...`);
+        document.querySelectorAll('.form-group .btn').forEach(btn => {
+          btn.classList.add('loading');
+        })
+        document.querySelector('#lobby-msg').textContent = `Game "${roomName}" created, Waiting for another player...`;
         break;
     }
 
@@ -119,35 +119,41 @@ socket.on('fire-missiles', msg => {
 });
 
 socket.on('missile-launched', idx => {
-  const sq = $(`.square[data-index="${idx}"]`);
-  if (sq.hasClass('fish')) {
-    sq.addClass('hit');
+  const sq = document.querySelector(`.square[data-index="${idx}"]`);
+  if (sq.classList.contains('fish')) {
+    sq.classList.add('hit');
     sq.append(fire);
-  } else { sq.addClass('missile'); }
+  } else { sq.classList.add('missile'); }
 })
 
 socket.on('fish-hit', idx => {
-  const sq = $(`.square[data-index="${idx}"]`);
-  sq.addClass('hit');
+  const sq = document.querySelector(`.square[data-index="${idx}"]`);
+  sq.classList.add('hit');
   sq.append(fire);
 })
 
 socket.on('game-over', () => {
-  $('#game-msg').text('Game over!!!');
-  $('#restartButton').show();
+  document.querySelector('#game-msg').text('Game over!!!');
+  document.querySelector('#restartButton').show();
 });
 
 socket.on('restart-game', () => {
-  $('.square').removeClass('hit');
-  $('.square').removeClass('missile');
-  $('.square').removeClass('fish');
-  $('.fire').remove();
-  $('#restartButton').hide();
+  document.querySelectorAll('.square').forEach(sq => {
+    sq.classList.remove('hit');
+  })
+  document.querySelectorAll('.square').forEach(sq => {
+    sq.classList.remove('missile');
+  })
+  document.querySelectorAll('.square').forEach(sq => {
+    sq.classList.remove('fish');
+  })
+  document.querySelectorAll('.fire').remove();
+  document.querySelector('#restartButton').styles.display = 'none';
 });
 
 socket.on('fish-destroyed', () => {
-  $('#game-msg').text('Fish destroyed!!!');
-  $('#restartButton').show();
+  document.querySelector('#game-msg').textContent = 'Fish destroyed!!!';
+  document.querySelector('#restartButton').styles.display = 'block';
 });
 
 
@@ -179,7 +185,7 @@ squares.forEach((s, idx) => s.addEventListener('touchstart', (e) => {
   } else if (gameTurn === 'FIRE_MISSILES') {
     let touch1 = e.touches[0];
 
-    if ($(touch1.target).hasClass('missile')) {
+    if (document.querySelectorAll(touch1.target).hasClass('missile')) {
       // dont re-fire on spot
       return;
     }
